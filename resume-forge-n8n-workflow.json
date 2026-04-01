@@ -1,0 +1,155 @@
+{
+  "name": "Resume Forge AI",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-resume",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 320],
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "Webhook Trigger",
+      "webhookId": "generate-resume-webhook-001"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\n\nconst jobDescription = body.jobDescription || '';\nconst baseResume    = body.baseResume    || '';\nconst recipientEmail = body.recipientEmail || 'rvnegi786@gmail.com';\n\nif (!jobDescription) throw new Error('jobDescription is required in the request body');\nif (!baseResume)     throw new Error('baseResume is required in the request body');\n\nreturn {\n  jobDescription,\n  baseResume,\n  recipientEmail\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 320],
+      "id": "a1b2c3d4-0002-0002-0002-000000000002",
+      "name": "Prepare Input"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [680, 540],
+      "id": "a1b2c3d4-0003-0003-0003-000000000003",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "aqiRce5A3dO2BR7Z",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert resume writer and ATS (Applicant Tracking System) specialist.\n\nYour task is to create a customized, ATS-optimized resume for the candidate based on their base resume and the provided job description.\n\nIMPORTANT RULES:\n1. ONLY include skills, technologies, and experiences that are RELEVANT to the job description. Do NOT add skills not present in the base resume.\n2. Re-order and re-emphasize bullet points to highlight what's most relevant to this specific role.\n3. Incorporate exact keywords and phrases from the job description naturally throughout the resume.\n4. Keep the tone professional and concise — no fluff.\n5. Use strong action verbs and quantified achievements wherever possible.\n6. Do NOT invent or fabricate any experience, skills, or numbers not present in the base resume.\n7. Format the output as clean plain text suitable for ATS parsing — no markdown symbols like ** or ##, no tables, no columns — just clean text with proper spacing and section headers in ALL CAPS.\n8. Maintain this exact structure:\n   - Name & Contact Info\n   - PROFESSIONAL SUMMARY (rewritten for this role)\n   - TECHNICAL SKILLS (only relevant ones, organized by category)\n   - PROFESSIONAL EXPERIENCE (with role-relevant bullet points first)\n   - PROJECTS (only the most relevant 2-3 projects)\n   - AWARDS\n   - EDUCATION\n\n---\nBASE RESUME:\n{{ $('Prepare Input').item.json.baseResume }}\n\n---\nJOB DESCRIPTION:\n{{ $('Prepare Input').item.json.jobDescription }}\n\n---\nNow generate the tailored, ATS-optimized resume below. Output ONLY the resume text — nothing else."
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [680, 320],
+      "id": "a1b2c3d4-0004-0004-0004-000000000004",
+      "name": "Generate Tailored Resume"
+    },
+    {
+      "parameters": {
+        "jsCode": "function cleanText(text) {\n  if (!text) return '';\n  // Remove markdown code fences if Gemini wraps in them\n  return text.replace(/```[a-z]*\\n?/gi, '').replace(/```/g, '').trim();\n}\n\nconst resumeText = cleanText($json.text || $json.message || '');\nconst meta = $('Prepare Input').item.json;\nconst recipientEmail = meta.recipientEmail || 'rvnegi786@gmail.com';\nconst jdPreview = (meta.jobDescription || '').substring(0, 100).replace(/\\n/g, ' ').trim();\nconst dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });\n\n// Build beautiful HTML email\nconst htmlMessage = `\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Your Tailored Resume</title>\n</head>\n<body style=\"margin:0;padding:0;background:#f0eeff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f0eeff;padding:32px 0;\">\n    <tr>\n      <td align=\"center\">\n        <table width=\"620\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(124,58,237,0.12);\">\n\n          <!-- Header -->\n          <tr>\n            <td style=\"background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 50%,#06b6d4 100%);padding:36px 40px;text-align:center;\">\n              <div style=\"font-size:32px;margin-bottom:8px;\">🎯</div>\n              <h1 style=\"margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;\">Your Tailored Resume is Ready</h1>\n              <p style=\"margin:8px 0 0;font-size:13px;color:rgba(255,255,255,0.8);\">Generated by ResumeForge AI &bull; Powered by Google Gemini</p>\n            </td>\n          </tr>\n\n          <!-- Meta badge -->\n          <tr>\n            <td style=\"padding:20px 40px 0;\">\n              <div style=\"background:#f9f8ff;border:1px solid #e5e1ff;border-radius:8px;padding:12px 16px;\">\n                <p style=\"margin:0;font-size:12px;color:#7c6a9e;\"><strong style=\"color:#7c3aed;\">JD Preview:</strong> ${jdPreview}...</p>\n                <p style=\"margin:4px 0 0;font-size:12px;color:#7c6a9e;\"><strong style=\"color:#7c3aed;\">Generated:</strong> ${dateStr}</p>\n              </div>\n            </td>\n          </tr>\n\n          <!-- Resume body -->\n          <tr>\n            <td style=\"padding:24px 40px;\">\n              <h2 style=\"margin:0 0 16px;font-size:14px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:0.08em;\">ATS-Optimized Resume</h2>\n              <div style=\"background:#fafafa;border:1px solid #ebebeb;border-radius:8px;padding:28px;white-space:pre-wrap;font-family:'Courier New',Courier,monospace;font-size:13px;line-height:1.8;color:#1a1a2e;\">${resumeText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>\n            </td>\n          </tr>\n\n          <!-- Tips -->\n          <tr>\n            <td style=\"padding:0 40px 24px;\">\n              <div style=\"background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px 20px;\">\n                <p style=\"margin:0 0 8px;font-size:13px;font-weight:600;color:#16a34a;\">💡 Tips for best results</p>\n                <ul style=\"margin:0;padding-left:18px;font-size:12px;color:#4b5563;line-height:1.8;\">\n                  <li>Copy this resume text into Google Docs or Word for final formatting.</li>\n                  <li>Save as PDF before submitting — ATS systems prefer PDF.</li>\n                  <li>Double-check all role/company details before applying.</li>\n                </ul>\n              </div>\n            </td>\n          </tr>\n\n          <!-- Footer -->\n          <tr>\n            <td style=\"background:#f9f8ff;border-top:1px solid #e5e1ff;padding:20px 40px;text-align:center;\">\n              <p style=\"margin:0;font-size:12px;color:#9d9ab5;\">Built by <a href=\"https://ravindernegi.vercel.app\" style=\"color:#7c3aed;text-decoration:none;\">Ravinder Singh Negi</a> &bull; ResumeForge AI</p>\n            </td>\n          </tr>\n\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>`;\n\nreturn {\n  htmlMessage,\n  resumeText,\n  organizer_email: recipientEmail,\n  subject: `Your Tailored Resume — ${dateStr} | ResumeForge AI`\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 320],
+      "id": "a1b2c3d4-0005-0005-0005-000000000005",
+      "name": "Format Email Report"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.organizer_email }}",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.htmlMessage }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1160, 320],
+      "id": "a1b2c3d4-0006-0006-0006-000000000006",
+      "name": "Send Email",
+      "webhookId": "resume-forge-gmail-001",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "evybvh2zf6iIrZUB",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Input": {
+      "main": [
+        [
+          {
+            "node": "Generate Tailored Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Tailored Resume": {
+      "main": [
+        [
+          {
+            "node": "Format Email Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Email Report": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Tailored Resume",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "resume-forge-v2-fixed",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "18164e1ba289472572d151d805c807ccec98971ee9c89379dbef50420f98e700"
+  },
+  "tags": []
+}

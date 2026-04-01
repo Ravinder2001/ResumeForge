@@ -1,0 +1,452 @@
+{
+  "name": "AI Meeting Autopilot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "autopilot",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        7728,
+        1200
+      ],
+      "id": "b57f361a-9031-405f-9f1f-5c619d6ed3cd",
+      "name": "Webhook (Meeting Finished)",
+      "webhookId": "af13f6b0-6101-4270-942c-7d37b06bcd87"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.meetingbaas.com/v2/bots/' + $json.body.data.bot_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-meeting-baas-api-key",
+              "value": "mb-VYuVvhweaTCdhPRtNnYbSfeaWkQLGiAxibmEGgJAnJZjQTNLiGrntWRzqQMhk"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        7952,
+        1200
+      ],
+      "id": "04ee8694-de83-4d7f-a76e-52cbdfd33ec4",
+      "name": "Get Meeting Details (Agenda)"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data.transcription }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        8176,
+        1200
+      ],
+      "id": "ee05d113-fc72-4f3b-946a-994c9af37268",
+      "name": "Fetch Transcript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const root = $items(\"Get Meeting Details (Agenda)\")[0].json.data.extra;\nconst utterances = $json.result.utterances || [];\nconst transcript = utterances.map(u => `${u.speaker}: ${u.text}`).join(\"\\n\");\n\nreturn {\n  meeting_id: root.meeting_id,\n  agenda: root.agenda || \"No agenda provided\",\n  transcript: transcript,\n  title: root.title || \"Untitled Meeting\",\n  organizer_email: root.organizer_email,\n  created_at: $items(\"Get Meeting Details (Agenda)\")[0].json.created_at\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8400,
+        1200
+      ],
+      "id": "e6f65c95-5831-4245-9c0b-789f1e9d636c",
+      "name": "Prepare Data"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        8608,
+        1456
+      ],
+      "id": "de4c7086-0128-443c-94aa-f0ebe768d2b3",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "aqiRce5A3dO2BR7Z",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an AI meeting auditor.\n\nMEETING TRANSCRIPT:\n{{ $('Prepare Data').item.json.transcript }}\n\nTask:\nGenerate detailed Minutes of Meeting (MoM).\n\nExpected output (JSON):\n{\n  \"summary\": \"Executive summary...\",\n  \"key_discussion_points\": [\"Point 1\", \"Point 2\"],\n  \"decisions\": [\"Decision 1\"],\n  \"action_items\": [{\"owner\": \"Name\", \"task\": \"Task\", \"due\": \"Date\"}]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        8592,
+        1088
+      ],
+      "id": "30aa7a5c-ac65-4001-b3a1-14ed00c4e95e",
+      "name": "Generate MoM"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an AI meeting auditor.\n\nMEETING AGENDA:\n{{ $('Prepare Data').item.json.agenda }}\n\nMEETING TRANSCRIPT:\n{{ $('Prepare Data').item.json.transcript }}\n\nTask:\nFor each agenda item:\n1. Check if it was discussed.\n2. Provide evidence.\n3. Mark missed items.\n\nExpected format (JSON):\n{\n  \"agenda_validation\": [\n    {\n      \"agenda_item\": \"Item\",\n      \"discussed\": true,\n      \"evidence\": \"Quote\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        8848,
+        944
+      ],
+      "id": "65a766c0-1ab4-4364-86ea-1fd5d76a618d",
+      "name": "Agenda Validation"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an AI meeting auditor.\n\nMEETING TRANSCRIPT:\n{{ $('Prepare Data').item.json.transcript }}\n\nTask:\n1. Determine overall client mood (Positive, Neutral, Negative)\n2. Provide signals.\n\nExpected format (JSON):\n{\n  \"client_mood\": {\n    \"overall\": \"Positive\",\n    \"signals\": [\"Happy about X\"]\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        9040,
+        1328
+      ],
+      "id": "02474520-aa36-4430-a10c-e498ab9e5b9e",
+      "name": "Client Mood"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an AI meeting auditor.\n\nMEETING AGENDA:\n{{ $('Prepare Data').item.json.agenda }}\n\nMEETING TRANSCRIPT:\n{{ $('Prepare Data').item.json.transcript }}\n\nTask:\nIdentify discussed topics NOT on the agenda.\n\nExpected format (JSON):\n{\n  \"out_of_scope_topics\": [\"Topic 1\", \"Topic 2\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        9248,
+        1056
+      ],
+      "id": "4e98fea2-11ab-42d9-83d6-0632656503e0",
+      "name": "Out of Scope"
+    },
+    {
+      "parameters": {
+        "jsCode": "function cleanJson(text) {\n  if (!text) return {};\n  const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();\n  try {\n    return JSON.parse(cleaned);\n  } catch (e) {\n    return {};\n  }\n}\n\nconst mom = cleanJson($items(\"Generate MoM\")[0].json.text);\nconst agenda = cleanJson($items(\"Agenda Validation\")[0].json.text);\nconst mood = cleanJson($items(\"Client Mood\")[0].json.text);\nconst scope = cleanJson($items(\"Out of Scope\")[0].json.text);\nconst meta = $items(\"Prepare Data\")[0].json;\n\n// Calculate Risk\nlet risk = \"Low\";\nlet score = 95;\nif (mood.client_mood && mood.client_mood.overall === \"Negative\") { risk = \"High\"; score -= 30; }\nif (scope.out_of_scope_topics && scope.out_of_scope_topics.length > 2) { risk = \"Medium\"; score -= 10; }\n\nlet missedItems = 0;\nif (agenda.agenda_validation) {\n  missedItems = agenda.agenda_validation.filter(i => !i.discussed).length;\n}\nif (missedItems > 0) { score -= (missedItems * 10); }\n\n// Build HTML Report\nconst html = `\n<!DOCTYPE html>\n<html>\n<body style=\"font-family: -apple-system, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;\">\n  \n  <div style=\"background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;\">\n    <h2 style=\"color: #2c3e50; margin: 0;\">Meeting Analysis Report</h2>\n    <p style=\"color: #666; margin: 5px 0 0 0;\">${meta.title}</p>\n    <div style=\"margin-top: 15px; display: flex; gap: 15px;\">\n      <span style=\"background: #e3f2fd; color: #1565c0; padding: 4px 8px; border-radius: 4px; font-size: 12px;\">Score: ${Math.max(0, score)}%</span>\n      <span style=\"background: ${risk === 'High' ? '#ffebee' : risk === 'Medium' ? '#fff3e0' : '#e8f5e9'}; color: ${risk === 'High' ? '#c62828' : risk === 'Medium' ? '#ef6c00' : '#2e7d32'}; padding: 4px 8px; border-radius: 4px; font-size: 12px;\">Risk: ${risk}</span>\n    </div>\n  </div>\n\n  <div style=\"background-color: white; border: 1px solid #e1e4e8; border-radius: 8px; padding: 20px; margin-bottom: 20px;\">\n    <h3 style=\"color: #2c3e50; margin-top: 0;\">📝 Executive Summary</h3>\n    <p>${mom.summary || \"No summary available.\"}</p>\n    \n    <h4 style=\"margin-bottom: 10px;\">Key Discussion Points</h4>\n    <ul style=\"padding-left: 20px; margin-top: 5px;\">\n      ${(mom.key_discussion_points || []).map(p => `<li>${p}</li>`).join('')}\n    </ul>\n\n    <h4 style=\"margin-bottom: 10px;\">Action Items</h4>\n    <ul style=\"padding-left: 20px; margin-top: 5px;\">\n      ${(mom.action_items || []).map(a => `<li><strong>${a.owner || 'Unknown'}</strong>: ${a.task}</li>`).join('')}\n    </ul>\n  </div>\n\n  <div style=\"background-color: white; border: 1px solid #e1e4e8; border-radius: 8px; padding: 20px; margin-bottom: 20px;\">\n    <h3 style=\"color: #2c3e50; margin-top: 0;\">🎯 Compliance & Mood</h3>\n    \n    <div style=\"margin-bottom: 15px;\">\n      <strong>Agenda Coverage:</strong>\n      <div style=\"margin-top: 5px;\">\n        ${(agenda.agenda_validation || []).map(i => \n          `<div style=\"display: flex; align-items: center; gap: 8px; margin-bottom: 5px;\">\n            <span style=\"color: ${i.discussed ? '#2e7d32' : '#c62828'}\">${i.discussed ? '✓' : '✗'}</span>\n            <span style=\"color: #555;\">${i.agenda_item}</span>\n           </div>`\n        ).join('')}\n      </div>\n    </div>\n\n    <div style=\"margin-bottom: 15px;\">\n      <strong>Client Mood: ${(mood.client_mood || {}).overall || 'Neutral'}</strong>\n      <ul style=\"padding-left: 20px; margin-top: 5px; color: #666;\">\n        ${((mood.client_mood || {}).signals || []).map(s => `<li>${s}</li>`).join('')}\n      </ul>\n    </div>\n\n    ${(scope.out_of_scope_topics || []).length > 0 ? `\n    <div>\n      <strong style=\"color: #ef6c00;\">🚫 Out of Scope Topics:</strong>\n      <ul style=\"padding-left: 20px; margin-top: 5px; color: #666;\">\n        ${scope.out_of_scope_topics.map(t => `<li>${t}</li>`).join('')}\n      </ul>\n    </div>` : ''}\n  </div>\n\n  <div style=\"text-align: center; color: #999; font-size: 12px;\">\n    Generated by Meeting Auditor AI • ${new Date().toISOString().split('T')[0]}\n  </div>\n</body>\n</html>`;\n\nreturn { \n  htmlMessage: html, \n  organizer_email: meta.organizer_email, \n  subject: `Meeting Analysis: ${meta.title}`,\n    meeting_id: meta.meeting_id || $items(\"Webhook (Meeting Finished)\")[0].json.body.data.bot_id,\n  db_data: {\n    mom_summary: mom.summary,\n    decisions: mom.decisions || [],\n    action_items: (mom.action_items || []).map(a => `${a.owner}: ${a.task}`),\n    risk_level: risk.toLowerCase(),\n    top_topics: mom.key_discussion_points || []\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        9520,
+        1200
+      ],
+      "id": "93afa26b-ab7d-48b4-bcff-03d17744f59a",
+      "name": "Format Report"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "audit_reports"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "completed",
+            "risk_level": "={{ $json.db_data.risk_level }}",
+            "mom_summary": "={{ $json.db_data.mom_summary }}",
+            "decisions": "={{ JSON.stringify($json.db_data.decisions) }}",
+            "action_items": "={{ JSON.stringify($json.db_data.action_items) }}",
+            "top_topics": "={{ JSON.stringify($json.db_data.top_topics) }}",
+            "updated_at": "={{ new Date().toISOString() }}",
+            "meeting_id": "={{ $json.meeting_id }}"
+          },
+          "matchingColumns": [
+            "meeting_id"
+          ],
+          "schema": [
+            {
+              "id": "meeting_id",
+              "displayName": "meeting_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "risk_level",
+              "displayName": "risk_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mom_summary",
+              "displayName": "mom_summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "decisions",
+              "displayName": "decisions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "json",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "action_items",
+              "displayName": "action_items",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "json",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "top_topics",
+              "displayName": "top_topics",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "json",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.2,
+      "position": [
+        9728,
+        1408
+      ],
+      "id": "be05083f-5ef7-4a59-8a9b-ebb3e1633434",
+      "name": "Update Audit in DB",
+      "credentials": {
+        "postgres": {
+          "id": "7cPdxGkmWkyhxNh4",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.organizer_email }}",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.htmlMessage }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        9936,
+        1200
+      ],
+      "id": "fce1e36e-3278-4efe-be4e-dac29ba2bc6c",
+      "name": "Send Email",
+      "webhookId": "71a9e0a6-bc4c-40d5-9612-3c9b10f8fcc9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "evybvh2zf6iIrZUB",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook (Meeting Finished)": {
+      "main": [
+        [
+          {
+            "node": "Get Meeting Details (Agenda)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Meeting Details (Agenda)": {
+      "main": [
+        [
+          {
+            "node": "Fetch Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Transcript": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data": {
+      "main": [
+        [
+          {
+            "node": "Generate MoM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate MoM": {
+      "main": [
+        [
+          {
+            "node": "Agenda Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agenda Validation": {
+      "main": [
+        [
+          {
+            "node": "Client Mood",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Client Mood": {
+      "main": [
+        [
+          {
+            "node": "Out of Scope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Out of Scope": {
+      "main": [
+        [
+          {
+            "node": "Format Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Report": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Audit in DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate MoM",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Agenda Validation",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Client Mood",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Out of Scope",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "8f8b3c89-5028-4bf9-a6e3-cad62930e24f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "18164e1ba289472572d151d805c807ccec98971ee9c89379dbef50420f98e700"
+  },
+  "id": "2KQu3EiQ5kjwUZuK",
+  "tags": []
+}
