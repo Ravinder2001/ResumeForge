@@ -1,55 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './index.css'
 
-const BASE_RESUME = `RAVINDER SINGH NEGI
-New Delhi, India | +91-9756726341 | rvnegi786@gmail.com
-linkedin.com/in/ravinder-singh-negi | ravindernegi.vercel.app | github.com/Ravinder2001
-
-PROFESSIONAL SUMMARY
-Full Stack Developer with 4+ years of experience building scalable, high-performance web applications using React.js, Next.js, Node.js, and PostgreSQL. Specialized in building scalable web applications, reusable UI component systems, and robust REST APIs. Delivered enterprise-grade platforms for pharmaceutical clients serving thousands of users. Experienced in AI integrations, workflow automation, and modern cloud deployments. Two-time WOW Award recipient at Indus Net Technologies.
-
-TECHNICAL SKILLS
-Frontend: React.js, Next.js, JavaScript (ES6+), TypeScript, HTML5, CSS3, Tailwind CSS, Responsive UI, Component Architecture, Performance Optimization
-Backend: Node.js, Express.js, REST API Development, MySQL, PostgreSQL, MongoDB, API Integration, Scalable Backend Systems
-AI & Automation: LLM Integration, RAG Pipelines, n8n Workflows, Google Gemini, AI Automation
-Tools & Cloud: Git, GitHub, AWS, Vercel, CI/CD, npm, Agile Development
-
-PROFESSIONAL EXPERIENCE
-Software Engineer | Mar 2022 – Present
-Indus Net Technologies (INT.), Kolkata
-• Architected and delivered 30+ full-stack production features using React.js, Next.js and Node.js for enterprise pharmaceutical platforms used by 1000+ internal users.
-• Developed 50+ reusable UI components improving frontend development speed by 40% and ensuring consistent responsive design across multiple products.
-• Built and optimized REST APIs and PostgreSQL queries improving system response time by 35% and reducing backend processing overhead.
-• Led frontend implementation of complex dashboards and workflow systems handling large datasets and business-critical operations.
-• Improved code quality through structured code reviews, refactoring initiatives and modern architecture patterns across the team.
-• Promoted from Associate Software Engineer to Software Engineer within 2 years for consistent high performance and technical contributions.
-
-PROJECTS
-AI Meeting Assistant — LLM, NLP, n8n | github.com/Ravinder2001/AI-Meeting-Validator
-Developed an LLM-based meeting validation system that compares transcripts against formal documentation, improving compliance verification and semantic accuracy.
-
-Hisabkar — Expense Splitter PWA — React.js, TypeScript, Node.js, PostgreSQL, AWS | hisabkar.vercel.app
-Designed and deployed a scalable Progressive Web App for personal finance management with real-time transaction handling and cloud deployment on AWS.
-
-Automated Incident Responder — n8n, Google Gemini, RAG | github.com/Ravinder2001/Incident-Responder-System
-Built AI-powered server monitoring automation using n8n workflows and RAG-based error interpretation, reducing manual incident triage effort by 70%.
-
-Create Pro App — CLI Tool — Node.js, Open Source | npmjs.com/package/create-pro-app
-Built and published an open source Node.js CLI to bootstrap modern React projects with optimized tooling and project structure.
-
-AWARDS
-WOW Award (2×) — Indus Net Technologies | Feb 2024 & Jun 2024
-Recognised twice within the same year for outstanding performance and significant technical contributions to key enterprise projects.
-
-EDUCATION
-Sikkim Manipal University | Mar 2024 – Mar 2026
-Master of Computer Applications (MCA) — Computer Science
-
-Masai School | Apr 2021 – Jan 2022
-Full Stack Web Development Program`
-
 const WEBHOOK_URL = 'https://new-n8n-latest.duckdns.org/webhook-test/generate-resume'
-const DEFAULT_EMAIL = 'rvnegi786@gmail.com'
 
 function parseGeminiError(message) {
   const msg = (message || '').toLowerCase()
@@ -69,13 +21,28 @@ function parseGeminiError(message) {
 }
 
 export default function App() {
+  // Main form state
   const [jobDescription, setJobDescription] = useState('')
-  const [recipientEmail, setRecipientEmail] = useState(DEFAULT_EMAIL)
   const [companyName, setCompanyName] = useState('')
+  
+  // Persistent configuration state
+  const [resumeDriveLink, setResumeDriveLink] = useState(() => localStorage.getItem('resume_drive_link') || '')
+  const [recipientEmail, setRecipientEmail] = useState(() => localStorage.getItem('recipient_email') || "")
+  
+  // UI/Status state
   const [status, setStatus] = useState(null) // null | 'loading' | 'success' | 'error'
   const [statusMessage, setStatusMessage] = useState('')
   const [errorDetail, setErrorDetail] = useState('')
   const [charCount, setCharCount] = useState(0)
+
+  // Sync with local storage
+  useEffect(() => {
+    localStorage.setItem('resume_drive_link', resumeDriveLink)
+  }, [resumeDriveLink])
+
+  useEffect(() => {
+    localStorage.setItem('recipient_email', recipientEmail)
+  }, [recipientEmail])
 
   const handleJDChange = (e) => {
     setJobDescription(e.target.value)
@@ -85,22 +52,24 @@ export default function App() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!jobDescription.trim()) {
+    if (!resumeDriveLink.trim()) {
       setStatus('error')
-      setStatusMessage('Please paste the job description before generating your resume.')
-      setErrorDetail('')
+      setStatusMessage('Please provide your Resume Drive Link in the settings above.')
       return
     }
     if (!recipientEmail.trim()) {
       setStatus('error')
-      setStatusMessage('Please provide a recipient email address.')
-      setErrorDetail('')
+      setStatusMessage('Please provide a recipient email address in the settings.')
+      return
+    }
+    if (!jobDescription.trim()) {
+      setStatus('error')
+      setStatusMessage('Please paste the job description before generating.')
       return
     }
     if (!companyName.trim()) {
       setStatus('error')
       setStatusMessage('Please enter the company name you are applying to.')
-      setErrorDetail('')
       return
     }
 
@@ -114,7 +83,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           jobDescription: jobDescription.trim(),
-          baseResume: BASE_RESUME,
+          baseResume: resumeDriveLink.trim(),
           recipientEmail: recipientEmail.trim(),
           companyName: companyName.trim(),
         }),
@@ -127,7 +96,7 @@ export default function App() {
 
       setStatus('success')
       setStatusMessage(
-        `Your tailored resume has been generated and sent to ${recipientEmail}. Check your inbox (and spam folder) in a moment!`
+        `Your tailored resume has been generated and sent to ${recipientEmail}. Check your inbox!`
       )
       setErrorDetail('')
       setJobDescription('')
@@ -138,7 +107,6 @@ export default function App() {
       const friendly = parseGeminiError(err.message)
       if (friendly) {
         setStatusMessage(friendly)
-        setErrorDetail('')
       } else {
         setStatusMessage('Something went wrong while generating your resume.')
         setErrorDetail(err.message)
@@ -148,12 +116,16 @@ export default function App() {
 
   const steps = [
     {
+      title: 'Configure Your Profile',
+      desc: 'Provide your base resume link and recipient email once. They stay saved locally!',
+    },
+    {
       title: 'Paste the Job Description',
       desc: 'Copy the full JD from any job board — LinkedIn, Naukri, Indeed, etc.',
     },
     {
       title: 'Hit "Generate & Send"',
-      desc: 'The workflow calls Google Gemini with your base resume + the JD.',
+      desc: 'The workflow calls Google Gemini with your base resume link + the JD.',
     },
     {
       title: 'Gemini Tailors Your Resume',
@@ -218,87 +190,111 @@ export default function App() {
         {/* Form Card */}
         <div className="card">
           <form onSubmit={handleSubmit} noValidate>
-            {/* JD Textarea */}
-            <div className="form-section">
-              <label htmlFor="job-description" className="form-label">
-                <span className="form-label-icon">📋</span>
-                Job Description
-              </label>
-              <textarea
-                id="job-description"
-                className="form-textarea"
-                placeholder="Paste the full job description here…&#10;&#10;We're looking for a Senior React Developer with 3+ years of experience in..."
-                value={jobDescription}
-                onChange={handleJDChange}
-                spellCheck={false}
-              />
-              <div className="form-hint">
-                <span>💡</span>
-                <span>Include the full JD — role, responsibilities, and requirements for best results. {charCount > 0 && `(${charCount.toLocaleString()} chars)`}</span>
+            <div className="split-layout">
+              {/* Left Column: Job Description */}
+              <div className="left-col">
+                <div className="form-section">
+                  <label htmlFor="job-description" className="form-label">
+                    <span className="form-label-icon">📋</span>
+                    Job Description
+                  </label>
+                  <textarea
+                    id="job-description"
+                    className="form-textarea"
+                    placeholder="Paste the full job description here…&#10;&#10;We're looking for a Senior React Developer with 3+ years of experience in..."
+                    value={jobDescription}
+                    onChange={handleJDChange}
+                    spellCheck={false}
+                  />
+                  <div className="form-hint">
+                    <span>💡</span>
+                    <span>Include the full JD — role, responsibilities, and requirements. {charCount > 0 && `(${charCount.toLocaleString()} chars)`}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Settings and Action */}
+              <div className="right-col">
+                {/* Configuration / Settings */}
+                <div className="form-section">
+                  <label htmlFor="resume-link" className="form-label">
+                    <span className="form-label-icon">🔗</span>
+                    Base Resume Link
+                  </label>
+                  <input
+                    id="resume-link"
+                    type="url"
+                    className="form-input"
+                    placeholder="Paste your Google Drive PDF link…"
+                    value={resumeDriveLink}
+                    onChange={(e) => setResumeDriveLink(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-section">
+                  <label htmlFor="recipient-email" className="form-label">
+                    <span className="form-label-icon">📨</span>
+                    Default Recipient Email
+                  </label>
+                  <input
+                    id="recipient-email"
+                    type="email"
+                    className="form-input"
+                    placeholder="e.g. yourname@gmail.com"
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-section">
+                  <label htmlFor="company-name" className="form-label">
+                    <span className="form-label-icon">🏢</span>
+                    Target Company
+                  </label>
+                  <input
+                    id="company-name"
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. Google, Atlassian…"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                  />
+                </div>
+
+                {/* API info note */}
+                <div className="api-info-note">
+                  <span className="api-info-icon">🔗</span>
+                  <span>
+                    Powered by Google Gemini via n8n
+                  </span>
+                </div>
+
+                {/* Submit */}
+                <button
+                  id="generate-btn"
+                  type="submit"
+                  className="btn-primary"
+                  disabled={status === 'loading'}
+                >
+                  {status === 'loading' ? (
+                    <>
+                      <span className="spinner"></span>
+                      Generating…
+                    </>
+                  ) : (
+                    <>
+                      ✨ Generate &amp; Send
+                    </>
+                  )}
+                  <span className="btn-shimmer"></span>
+                </button>
+
+                <div className="form-hint" style={{ marginTop: '16px', justifyContent: 'center' }}>
+                  <span>⚙️</span>
+                  <span>Settings are saved locally.</span>
+                </div>
               </div>
             </div>
-
-            {/* Company + Email row */}
-            <div className="two-col-grid">
-              <div>
-                <label htmlFor="company-name" className="form-label">
-                  <span className="form-label-icon">🏢</span>
-                  Company Name
-                </label>
-                <input
-                  id="company-name"
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. Google, Atlassian, Razorpay…"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="recipient-email" className="form-label">
-                  <span className="form-label-icon">📨</span>
-                  Send Resume To
-                </label>
-                <input
-                  id="recipient-email"
-                  type="email"
-                  className="form-input"
-                  placeholder="rvnegi786@gmail.com"
-                  value={recipientEmail}
-                  onChange={(e) => setRecipientEmail(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* API info note */}
-            <div className="api-info-note">
-              <span className="api-info-icon">🔗</span>
-              <span>
-                Requests are sent to{' '}
-                <code className="api-endpoint">POST /webhook/generate-resume</code>
-                {' '}· Powered by Google Gemini 2.0 Flash via n8n
-              </span>
-            </div>
-
-            {/* Submit */}
-            <button
-              id="generate-btn"
-              type="submit"
-              className="btn-primary"
-              disabled={status === 'loading'}
-            >
-              {status === 'loading' ? (
-                <>
-                  <span className="spinner"></span>
-                  Generating your resume…
-                </>
-              ) : (
-                <>
-                  ✨ Generate &amp; Send Resume
-                </>
-              )}
-              <span className="btn-shimmer"></span>
-            </button>
           </form>
 
           {/* Status Message */}

@@ -156,7 +156,7 @@ body {
 .main-content {
   position: relative;
   z-index: 5;
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 60px 40px;
 }
@@ -337,12 +337,47 @@ body {
   letter-spacing: 0.1em;
 }
 
-/* ── Two-column grid for Company + Email ── */
-.two-col-grid {
+/* ── Split Layout ── */
+.split-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 28px;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 40px;
+  align-items: stretch;
+}
+
+.left-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.left-col .form-textarea {
+  flex: 1;
+  min-height: 400px;
+}
+
+.right-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding-left: 40px;
+  border-left: 1px solid var(--border);
+}
+
+@media (max-width: 960px) {
+  .split-layout {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .right-col {
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding-top: 32px;
+    margin-top: 8px;
+  }
+  .left-col .form-textarea {
+    min-height: 280px;
+  }
 }
 
 /* ── API Info Note ── */
