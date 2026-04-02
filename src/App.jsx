@@ -48,7 +48,7 @@ Master of Computer Applications (MCA) — Computer Science
 Masai School | Apr 2021 – Jan 2022
 Full Stack Web Development Program`
 
-const WEBHOOK_URL = 'https://new-n8n-latest.duckdns.org/webhook/generate-resume'
+const WEBHOOK_URL = 'https://new-n8n-latest.duckdns.org/webhook-test/generate-resume'
 const DEFAULT_EMAIL = 'rvnegi786@gmail.com'
 
 function parseGeminiError(message) {
