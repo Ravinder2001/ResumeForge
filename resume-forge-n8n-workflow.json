@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        -1280,
-        160
+        592,
+        560
       ],
-      "id": "62b83046-6f5c-4ef0-bedc-49d5d9979ab6",
+      "id": "61a4d4d6-832c-4dff-ae83-57bb11da1112",
       "name": "Webhook Trigger",
       "webhookId": "generate-resume-webhook-001"
     },
@@ -24,27 +24,28 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1056,
-        160
+        816,
+        560
       ],
-      "id": "4509f7f7-d00f-4e8f-acf0-82814bd69222",
+      "id": "495d73e4-fea9-4862-8618-bf5f7575ec1c",
       "name": "Prepare Input"
     },
     {
       "parameters": {
+        "modelName": "models/gemini-2.0-flash",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        -832,
-        384
+        1024,
+        784
       ],
-      "id": "2cad3d10-749b-4b3c-85bc-93acd48500ec",
+      "id": "287bd54a-1fb9-471d-acdf-d881b9428e3b",
       "name": "Google Gemini Chat Model",
       "credentials": {
         "googlePalmApi": {
-          "id": "HVe0U53T9cBRKobi",
+          "id": "3ey0z8Hetxu4jMor",
           "name": "Google Gemini(PaLM) Api account"
         }
       }
@@ -52,161 +53,67 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=You are an expert resume writer and ATS (Applicant Tracking System) specialist.\n\nYour task is to create a customized, ATS-optimized resume for the candidate based on their base resume and the provided job description.\n\nIMPORTANT RULES:\n1. ONLY include skills, technologies, and experiences that are RELEVANT to the job description. Do NOT add skills not present in the base resume.\n2. Re-order and re-emphasize bullet points to highlight what's most relevant to this specific role.\n3. Incorporate exact keywords and phrases from the job description naturally throughout the resume.\n4. Keep the tone professional and concise — no fluff.\n5. Use strong action verbs and quantified achievements wherever possible.\n6. Do NOT invent or fabricate any experience, skills, or numbers not present in the base resume.\n7. Format the output as clean plain text suitable for ATS parsing — no markdown symbols like ** or ##, no tables, no columns — just clean text with proper spacing and section headers in ALL CAPS.\n8. Maintain this exact structure:\n   - Name & Contact Info\n   - PROFESSIONAL SUMMARY (rewritten for this role)\n   - TECHNICAL SKILLS (only relevant ones, organized by category)\n   - PROFESSIONAL EXPERIENCE (with role-relevant bullet points first)\n   - PROJECTS (only the most relevant 2-3 projects)\n   - AWARDS\n   - EDUCATION\n\n---\nBASE RESUME:\n{{ $('Prepare Input').item.json.baseResume }}\n\n---\nJOB DESCRIPTION:\n{{ $('Prepare Input').item.json.jobDescription }}\n\n---\nNow generate the tailored, ATS-optimized resume below. Output ONLY the resume text — nothing else."
+        "text": "==Act as an expert ATS resume writer, hiring manager, and recruiter.\n\nYour task is to create a highly tailored, ATS-optimized resume for the candidate based on their base resume and the provided job description.\n\n1. Deep Analysis\n* Analyze the candidate's base profile to understand their experience, skills, achievements, and strengths.\n* Analyze the job description to identify required skills, keywords, responsibilities, and hidden expectations (based on role level).\n\n2. Resume Tailoring (Most Important)\n* Create a highly tailored, ATS-optimized resume specifically for this job role.\n* Align the candidate's experience with the job requirements.\n* Naturally incorporate relevant keywords from the job description throughout the resume.\n* Reframe the experience to match this role as closely as possible.\n* Highlight only the most relevant achievements for this job.\n\nCRITICAL RULES FOR GENERATION:\n1. NO HALLUCINATION: Do NOT invent or fabricate any experience, skills, or numbers not present in the base resume. Only use what is provided.\n2. RELEVANCE: ONLY include skills, technologies, and experiences that are RELEVANT to the job description.\n3. CONCISENESS: Keep the tone professional and concise — no fluff. Use strong action verbs and quantified achievements.\n4. FORMATTING: Use **double asterisks** to bold important text (like job titles, company names, or key numbers) naturally so it draws attention.\n5. EXACT STRUCTURE: Maintain this EXACT order with ALL CAPS section headers so it parses correctly:\n   - Name & Contact Info\n   - PROFESSIONAL SUMMARY\n   - TECHNICAL SKILLS\n   - PROFESSIONAL EXPERIENCE\n   - PROJECTS\n   - AWARDS\n   - EDUCATION\n\n---\nBASE RESUME:\n{{ $('Prepare Input').item.json.baseResume }}\n\n---\nJOB DESCRIPTION:\n{{ $('Prepare Input').item.json.jobDescription }}\n\n---\nNow generate the tailored, ATS-optimized resume below. Output ONLY the final resume text — no introductory remarks and no markdown code blocks summarizing your thoughts.\n"
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.4,
       "position": [
-        -832,
-        160
+        1024,
+        560
       ],
-      "id": "516b89c2-cada-4c53-a406-2d041521c6ae",
+      "id": "255a6768-5362-4904-afb7-7b10be805a5b",
       "name": "Generate Tailored Resume"
     },
     {
       "parameters": {
-        "jsCode": "function cleanText(t) {\n  return (t || '').replace(/```[a-z]*\\n?/gi, '').replace(/```/g, '').trim();\n}\n\nconst resumeText = cleanText($json.text || $json.message || '');\nconst meta = $('Prepare Input').item.json;\nconst recipientEmail = meta.recipientEmail || 'rvnegi786@gmail.com';\nconst dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });\nconst jdPreview = (meta.jobDescription || '').substring(0, 100).replace(/\\n/g, ' ').trim();\nconst docTitle = `Tailored Resume - ${dateStr}`;\n\nconst emailBody = `\n<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:0 auto;\">\n  <div style=\"background:linear-gradient(135deg,#7c3aed,#4f46e5,#06b6d4);padding:28px 32px;border-radius:10px 10px 0 0;text-align:center;\">\n    <div style=\"font-size:28px;\">🎯</div>\n    <h1 style=\"color:#fff;font-size:18px;margin:8px 0 4px;\">Your Tailored Resume is Ready</h1>\n    <p style=\"color:rgba(255,255,255,0.8);font-size:12px;margin:0;\">ResumeForge AI · Powered by Google Gemini</p>\n  </div>\n  <div style=\"background:#fff;border:1px solid #e5e1ff;border-top:none;padding:24px 32px;border-radius:0 0 10px 10px;\">\n    <p style=\"font-size:14px;color:#1a1a2e;margin-bottom:12px;\">Hi Ravinder,</p>\n    <p style=\"font-size:13px;color:#444;line-height:1.7;margin-bottom:16px;\">\n      Your ATS-optimized resume has been generated and is attached as a <strong>PDF</strong>.\n      It has been tailored for:\n    </p>\n    <div style=\"background:#f9f8ff;border-left:3px solid #7c3aed;padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:20px;\">\n      <p style=\"font-size:12px;color:#7c6a9e;margin:0;\"><em>${jdPreview}...</em></p>\n    </div>\n    <div style=\"background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:14px 18px;margin-bottom:20px;\">\n      <p style=\"font-size:12px;font-weight:700;color:#16a34a;margin-bottom:6px;\">&#128161; Next Steps</p>\n      <ul style=\"font-size:12px;color:#4b5563;padding-left:16px;line-height:1.8;margin:0;\">\n        <li>Open the attached PDF and review carefully</li>\n        <li>Submit the PDF directly — ATS systems prefer PDF format</li>\n        <li>Double-check all dates and company names before applying</li>\n      </ul>\n    </div>\n    <p style=\"font-size:11px;color:#9d9ab5;text-align:center;border-top:1px solid #f0eeff;padding-top:14px;margin:0;\">\n      Built by <a href=\"https://ravindernegi.vercel.app\" style=\"color:#7c3aed;\">Ravinder Singh Negi</a> · ResumeForge AI\n    </p>\n  </div>\n</div>`;\n\nreturn {\n  resumeText,\n  docTitle,\n  recipientEmail,\n  emailBody,\n  subject: `📄 Your Tailored Resume — ${dateStr} | ResumeForge AI`\n};"
+        "jsCode": "function cleanText(t) {\n  return (t || '').replace(/```[a-z]*\\n?/gi, '').replace(/```/g, '').trim();\n}\nfunction esc(s) {\n  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\nfunction md2html(s) {\n  // Convert markdown-style **bold** tags to HTML bold tags\n  return esc(s).replace(/\\*\\*(.*?)\\*\\*/g, '<b>$1</b>');\n}\n\nconst resumeText = cleanText($('Generate Tailored Resume').item.json.text || '');\nconst meta = $('Prepare Input').item.json;\nconst recipientEmail = meta.recipientEmail || 'rvnegi786@gmail.com';\nconst dateStr = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });\nconst jdPreview = (meta.jobDescription || '').substring(0, 100).replace(/\\n/g,' ').trim();\n\nconst SECTIONS = ['PROFESSIONAL SUMMARY','TECHNICAL SKILLS','PROFESSIONAL EXPERIENCE',\n  'WORK EXPERIENCE','EXPERIENCE','PROJECTS','AWARDS','EDUCATION','SKILLS'];\n\nconst lines = resumeText.split('\\n');\nlet name='', contactLine='', linksLine='';\nlet sections={}, currentSection='', sectionContent=[];\n\nfor (let i = 0; i < lines.length; i++) {\n  const line = lines[i].trim();\n  if (!line) continue;\n  if (i === 0) { name = line; continue; }\n  if (i === 1) { contactLine = line.replace(/\\|/g, ' — '); continue; }\n  if (i === 2 && (line.toLowerCase().includes('linkedin') || line.toLowerCase().includes('github'))) {\n    linksLine = line; continue;\n  }\n  const upper = line.toUpperCase();\n  const isSection = SECTIONS.some(s => upper.startsWith(s));\n  if (isSection) {\n    if (currentSection) sections[currentSection] = [...sectionContent];\n    currentSection = SECTIONS.find(s => upper.startsWith(s));\n    sectionContent = [];\n  } else {\n    if (currentSection) sectionContent.push(line);\n  }\n}\nif (currentSection) sections[currentSection] = [...sectionContent];\n\nconst dateStr2 = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });\nconst jdPreview2 = (meta.jobDescription || '').substring(0, 100).replace(/\\n/g,' ').trim();\n\nconst emailBody = `<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:0 auto;\">\n<div style=\"background:linear-gradient(135deg,#7c3aed,#4f46e5,#06b6d4);padding:28px 32px;border-radius:10px 10px 0 0;text-align:center;\">\n<div style=\"font-size:28px;\">🎯</div>\n<h1 style=\"color:#fff;font-size:18px;margin:8px 0 4px;\">Your Tailored Resume is Ready</h1>\n<p style=\"color:rgba(255,255,255,0.8);font-size:12px;margin:0;\">ResumeForge AI · Powered by Google Gemini</p>\n</div>\n<div style=\"background:#fff;border:1px solid #e5e1ff;border-top:none;padding:24px 32px;border-radius:0 0 10px 10px;\">\n<p style=\"font-size:14px;color:#1a1a2e;margin-bottom:12px;\">Hi Ravinder,</p>\n<p style=\"font-size:13px;color:#444;line-height:1.7;margin-bottom:16px;\">Your ATS-optimized resume is attached as a <strong>PDF</strong>, tailored for:</p>\n<div style=\"background:#f9f8ff;border-left:3px solid #7c3aed;padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:16px;\">\n<p style=\"font-size:12px;color:#7c6a9e;margin:0;\"><em>${esc(jdPreview2)}...</em></p>\n</div>\n<p style=\"font-size:11px;color:#9d9ab5;text-align:center;padding-top:12px;margin:0;\">Built by Ravinder Singh Negi · ResumeForge AI</p>\n</div></div>`;\n\nreturn {\n  resumeText,\n  recipientEmail,\n  emailBody,\n  subject: `📄 Your Tailored Resume — ${dateStr2} | ResumeForge AI`,\n  parsedSections: sections,\n  name,\n  contactLine\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -544,
-        160
+        1376,
+        560
       ],
-      "id": "2f7bbe69-4597-460d-8718-5da2fdf5651d",
+      "id": "36825a80-aa21-425d-a185-8cdab6b26db5",
       "name": "Prepare Doc Content"
     },
     {
       "parameters": {
-        "folderId": "1kP02FDEL_tgLYKetjHvNY3V8wNa9CA4t",
-        "title": "={{ $json.docTitle }}"
+        "jsCode": "const PDFDocument = require('pdfkit');\n\nconst meta = $('Prepare Doc Content').item.json;\nconst resumeText = meta.resumeText || '';\nconst recipientEmail = meta.recipientEmail || 'rvnegi786@gmail.com';\nconst subject = meta.subject || 'Your Tailored Resume';\nconst emailBody = meta.emailBody || '';\n\n// ─── Parse resume text into sections ───────────────────────────────────────\nfunction cleanText(t) {\n  return (t || '').replace(/```[a-z]*\\n?/gi, '').replace(/```/g, '').trim();\n}\nfunction stripBold(s) {\n  return String(s).replace(/\\*\\*(.*?)\\*\\*/g, '$1');\n}\n\nconst SECTIONS = [\n  'PROFESSIONAL SUMMARY', 'TECHNICAL SKILLS', 'PROFESSIONAL EXPERIENCE',\n  'WORK EXPERIENCE', 'EXPERIENCE', 'PROJECTS', 'AWARDS', 'EDUCATION', 'SKILLS'\n];\n\nconst rawLines = cleanText(resumeText).split('\\n');\nlet nameStr = '', contactStr = '', linksStr = '';\nlet sections = {}, currentSection = '', sectionContent = [];\n\nfor (let i = 0; i < rawLines.length; i++) {\n  const line = rawLines[i].trim();\n  if (!line) continue;\n  if (i === 0) { nameStr = stripBold(line); continue; }\n  if (i === 1) { contactStr = stripBold(line).replace(/\\|/g, '  —  '); continue; }\n  if (i === 2 && (line.toLowerCase().includes('linkedin') || line.toLowerCase().includes('github'))) {\n    linksStr = stripBold(line); continue;\n  }\n  const upper = line.toUpperCase();\n  const matchedSection = SECTIONS.find(s => upper.startsWith(s));\n  if (matchedSection) {\n    if (currentSection) sections[currentSection] = [...sectionContent];\n    currentSection = matchedSection;\n    sectionContent = [];\n  } else {\n    if (currentSection) sectionContent.push(rawLines[i]);\n  }\n}\nif (currentSection) sections[currentSection] = [...sectionContent];\n\n// ─── PDF Generation ─────────────────────────────────────────────────────────\nconst pdfBuffer = await new Promise((resolve, reject) => {\n  const doc = new PDFDocument({\n    size: 'A4',\n    margins: { top: 36, bottom: 36, left: 48, right: 48 }\n  });\n\n  const chunks = [];\n  doc.on('data', chunk => chunks.push(chunk));\n  doc.on('end', () => resolve(Buffer.concat(chunks)));\n  doc.on('error', reject);\n\n  const pageWidth = doc.page.width;\n  const contentWidth = pageWidth - 48 - 48; // left + right margin\n  const LEFT = 48;\n  const RIGHT = pageWidth - 48;\n\n  // ── Helpers ──\n  function drawSectionTitle(title) {\n    doc.moveDown(0.4);\n    doc\n      .font('Helvetica-Bold')\n      .fontSize(11)\n      .text(title.charAt(0).toUpperCase() + title.slice(1).toLowerCase(), LEFT, doc.y, { width: contentWidth });\n    const lineY = doc.y + 1;\n    doc\n      .moveTo(LEFT, lineY)\n      .lineTo(RIGHT, lineY)\n      .lineWidth(0.75)\n      .strokeColor('#000000')\n      .stroke();\n    doc.moveDown(0.3);\n  }\n\n  function drawRowWithDate(leftText, rightText, bold = false) {\n    const y = doc.y;\n    const dateWidth = 110;\n    const textWidth = contentWidth - dateWidth;\n    if (bold) {\n      doc.font('Helvetica-Bold').fontSize(10.5);\n    } else {\n      doc.font('Helvetica').fontSize(10.5);\n    }\n    doc.text(stripBold(leftText), LEFT, y, { width: textWidth, lineBreak: false });\n    doc.font('Helvetica-Oblique').fontSize(9.5)\n      .text(stripBold(rightText), LEFT + textWidth, y, { width: dateWidth, align: 'right', lineBreak: false });\n    doc.moveDown(0.25);\n  }\n\n  function drawBullet(text) {\n    const y = doc.y;\n    doc.font('Helvetica').fontSize(10.5)\n      .text('•', LEFT, y, { width: 12, lineBreak: false });\n    doc.text(stripBold(text.replace(/^[-•*]\\s*/, '').trim()), LEFT + 12, y, { width: contentWidth - 12 });\n    doc.moveDown(0.1);\n  }\n\n  function drawBody(text) {\n    doc.font('Helvetica').fontSize(10.5)\n      .text(stripBold(text), LEFT, doc.y, { width: contentWidth });\n    doc.moveDown(0.15);\n  }\n\n  function drawBoldBody(text) {\n    doc.font('Helvetica-Bold').fontSize(10.5)\n      .text(stripBold(text), LEFT, doc.y, { width: contentWidth });\n    doc.moveDown(0.15);\n  }\n\n  function drawSkillLine(line) {\n    const colonIdx = line.indexOf(':');\n    if (colonIdx > -1) {\n      const label = stripBold(line.slice(0, colonIdx).trim());\n      const value = stripBold(line.slice(colonIdx + 1).trim());\n      const y = doc.y;\n      doc.font('Helvetica-Bold').fontSize(10.5)\n        .text(label + ':', LEFT, y, { continued: true })\n        .font('Helvetica')\n        .text(' ' + value, { width: contentWidth });\n    } else {\n      drawBody(line);\n    }\n    doc.moveDown(0.1);\n  }\n\n  function drawProjectLine(line) {\n    const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');\n    let content = isBullet ? line.trim().slice(1).trim() : line.trim();\n    content = stripBold(content);\n\n    // Check for URL at end\n    const urlMatch = content.match(/\\s+(https?:\\/\\/\\S+|[\\w.\\-/]+\\.(?:app|io|com|net|org|dev)\\S*)$/);\n    const url = urlMatch ? urlMatch[1] : '';\n    const mainPart = url ? content.slice(0, content.lastIndexOf(url)).trim() : content;\n\n    const dashIdx = mainPart.indexOf('—') > -1 ? mainPart.indexOf('—') :\n                    mainPart.indexOf('|') > -1 ? mainPart.indexOf('|') : -1;\n\n    if (dashIdx > -1 || url) {\n      // Project header line\n      const projName = dashIdx > -1 ? mainPart.slice(0, dashIdx).trim() : mainPart;\n      const tech = dashIdx > -1 ? mainPart.slice(dashIdx + 1).trim() : '';\n\n      const y = doc.y;\n      const urlWidth = url ? Math.min(url.replace(/^https?:\\/\\//, '').length * 5.2 + 10, 180) : 0;\n      const leftWidth = contentWidth - urlWidth;\n\n      doc.font('Helvetica-Bold').fontSize(10.5)\n        .text('• ' + projName, LEFT, y, { continued: tech ? true : false, lineBreak: false });\n      if (tech) {\n        doc.font('Helvetica').fontSize(10.5)\n          .text('  —  ' + tech, { continued: false, lineBreak: false });\n      }\n\n      if (url) {\n        const displayUrl = url.replace(/^https?:\\/\\//, '');\n        const textY = y;\n        const textX = RIGHT - urlWidth;\n        doc.font('Helvetica').fontSize(8.5).fillColor('#000000')\n          .text(displayUrl, textX, textY, { width: urlWidth, align: 'right' });\n        // Draw cyan box around URL\n        const boxH = 12;\n        doc.rect(textX - 2, textY - 1, urlWidth + 2, boxH)\n          .lineWidth(0.6)\n          .strokeColor('#00ccdd')\n          .stroke();\n        doc.fillColor('#000000');\n      }\n      doc.moveDown(0.25);\n    } else {\n      // Project description line\n      doc.font('Helvetica').fontSize(10.5).fillColor('#000000')\n        .text(content, LEFT + 12, doc.y, { width: contentWidth - 12 });\n      doc.moveDown(0.1);\n    }\n  }\n\n  // ── HEADER ──────────────────────────────────────────────────────────────────\n  doc.font('Helvetica-Bold').fontSize(18)\n    .text(nameStr, LEFT, 36, { width: contentWidth, align: 'center' });\n  doc.moveDown(0.2);\n\n  doc.font('Helvetica').fontSize(9.5)\n    .text(contactStr, LEFT, doc.y, { width: contentWidth, align: 'center' });\n  doc.moveDown(0.2);\n\n  // Links row\n  if (linksStr) {\n    const links = linksStr.split('|').map(l => l.trim()).filter(Boolean);\n    const linkText = links.join('  —  ');\n    const y = doc.y;\n    doc.font('Helvetica').fontSize(9.5)\n      .text(linkText, LEFT, y, { width: contentWidth, align: 'center' });\n    // Draw cyan box around each link\n    links.forEach((link, idx) => {\n      const cleanLink = stripBold(link);\n      const approxW = cleanLink.length * 5 + 8;\n      // approximate positions - simple underline style for links\n    });\n    doc.moveDown(0.5);\n  }\n\n  // ── PROFESSIONAL SUMMARY ────────────────────────────────────────────────────\n  const summary = sections['PROFESSIONAL SUMMARY'] || [];\n  if (summary.length) {\n    drawSectionTitle('Professional Summary');\n    summary.forEach(line => {\n      if (line.trim()) drawBody(line);\n    });\n  }\n\n  // ── TECHNICAL SKILLS ────────────────────────────────────────────────────────\n  const skills = sections['TECHNICAL SKILLS'] || sections['SKILLS'] || [];\n  if (skills.length) {\n    drawSectionTitle('Technical Skills');\n    skills.forEach(line => {\n      if (line.trim()) drawSkillLine(line.trim());\n    });\n  }\n\n  // ── PROFESSIONAL EXPERIENCE ─────────────────────────────────────────────────\n  const exp = sections['PROFESSIONAL EXPERIENCE'] || sections['WORK EXPERIENCE'] || sections['EXPERIENCE'] || [];\n  if (exp.length) {\n    drawSectionTitle('Professional Experience');\n    exp.forEach(line => {\n      const trimmed = line.trim();\n      if (!trimmed) return;\n      if ((trimmed.includes('|') || trimmed.includes('—')) &&\n          (trimmed.includes('20') || trimmed.toLowerCase().includes('present'))) {\n        // Job title | Date or Company | Date\n        const sep = trimmed.includes('|') ? '|' : '—';\n        const parts = trimmed.split(sep);\n        const left = parts.slice(0, -1).join(sep).trim();\n        const date = parts[parts.length - 1].trim();\n        drawRowWithDate(left, date, true);\n      } else if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {\n        drawBullet(trimmed);\n      } else {\n        // Company name line\n        doc.font('Helvetica-Bold').fontSize(10.5)\n          .text(stripBold(trimmed), LEFT, doc.y, { width: contentWidth });\n        doc.moveDown(0.15);\n      }\n    });\n  }\n\n  // ── PROJECTS ─────────────────────────────────────────────────────────────────\n  const projects = sections['PROJECTS'] || [];\n  if (projects.length) {\n    drawSectionTitle('Projects');\n    projects.forEach(line => {\n      if (line.trim()) drawProjectLine(line);\n    });\n  }\n\n  // ── AWARDS ───────────────────────────────────────────────────────────────────\n  const awards = sections['AWARDS'] || [];\n  if (awards.length) {\n    drawSectionTitle('Awards');\n    awards.forEach(line => {\n      const trimmed = line.trim();\n      if (!trimmed) return;\n      const clean = trimmed.replace(/^[-•*]\\s*/, '').trim();\n      if (clean.includes('|') || clean.includes('—')) {\n        const sep = clean.includes('|') ? '|' : '—';\n        const parts = clean.split(sep);\n        const left = parts.slice(0, -1).join(sep).trim();\n        const date = parts[parts.length - 1].trim();\n        drawRowWithDate(left, date, true);\n      } else {\n        drawBody(clean);\n      }\n    });\n  }\n\n  // ── EDUCATION ────────────────────────────────────────────────────────────────\n  const edu = sections['EDUCATION'] || [];\n  if (edu.length) {\n    drawSectionTitle('Education');\n    edu.forEach(line => {\n      const trimmed = line.trim();\n      if (!trimmed) return;\n      if (trimmed.includes('|') && trimmed.includes('20')) {\n        const parts = trimmed.split('|');\n        const left = parts.slice(0, -1).join('|').trim();\n        const date = parts[parts.length - 1].trim();\n        drawRowWithDate(left, date, true);\n      } else {\n        drawBody(trimmed);\n      }\n    });\n  }\n\n  doc.end();\n});\n\nreturn {\n  json: {\n    recipientEmail,\n    subject,\n    emailBody\n  },\n  binary: {\n    data: {\n      data: pdfBuffer.toString('base64'),\n      mimeType: 'application/pdf',\n      fileName: 'resume.pdf'\n    }\n  }\n};"
       },
-      "type": "n8n-nodes-base.googleDocs",
+      "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -368,
-        160
+        1568,
+        560
       ],
-      "id": "b23cf5b4-5312-4a7b-bc86-980c772891ba",
-      "name": "Create Google Doc",
-      "credentials": {
-        "googleDocsOAuth2Api": {
-          "id": "BJIhra8i6XyCoKh8",
-          "name": "Google Docs account"
-        }
-      }
+      "id": "50f5dcd2-b332-4f8a-becb-c556eb97cc57",
+      "name": "Generate PDF"
     },
     {
       "parameters": {
-        "operation": "update",
-        "documentURL": "={{ $json.id }}",
-        "actionsUi": {
-          "actionFields": [
-            {
-              "action": "insert",
-              "locationChoice": "location",
-              "text": "={{ $('Prepare Doc Content').item.json.resumeText }}"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.googleDocs",
-      "typeVersion": 2,
-      "position": [
-        -160,
-        160
-      ],
-      "id": "c9c18582-3da8-4b2e-b5fd-4cb85e2724a9",
-      "name": "Insert Resume Text",
-      "credentials": {
-        "googleDocsOAuth2Api": {
-          "id": "BJIhra8i6XyCoKh8",
-          "name": "Google Docs account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "download",
-        "fileId": {
-          "__rl": true,
-          "value": "={{ $('Create Google Doc').item.json.id }}",
-          "mode": "id"
-        },
+        "fromEmail": "rvnegi786@gmail.com",
+        "toEmail": "={{ $json.recipientEmail }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "html",
+        "message": "={{ $json.emailBody }}",
         "options": {
-          "googleFileConversion": {
-            "conversion": {
-              "docsToFormat": "application/pdf"
-            }
-          }
+          "attachments": "data"
         }
       },
-      "type": "n8n-nodes-base.googleDrive",
-      "typeVersion": 3,
-      "position": [
-        80,
-        160
-      ],
-      "id": "76c31605-6d5f-4faa-925e-33d7db5e0d9f",
-      "name": "Export as PDF",
-      "credentials": {
-        "googleDriveOAuth2Api": {
-          "id": "jJjU8w4SU7FdfKXV",
-          "name": "Google Drive account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "sendTo": "={{ $('Prepare Doc Content').item.json.recipientEmail }}",
-        "subject": "={{ $('Prepare Doc Content').item.json.subject }}",
-        "message": "={{ $('Prepare Doc Content').item.json.emailBody }}",
-        "options": {
-          "attachmentsUi": {
-            "attachmentsBinary": [
-              {}
-            ]
-          }
-        }
-      },
-      "type": "n8n-nodes-base.gmail",
+      "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        288,
-        32
+        1760,
+        560
       ],
-      "id": "39bee715-6ec9-44fa-a90b-ddbb16aafb2e",
+      "id": "df002760-00d1-45c0-8848-739b4c71078b",
       "name": "Send Email",
-      "webhookId": "8ccd2ba2-1968-4dfd-9a3d-553b14d9ae5d",
+      "webhookId": "6d763720-f1d2-4dee-a426-3756c648a759",
       "credentials": {
-        "gmailOAuth2": {
-          "id": "MHcXOs1UqQtfIqfY",
-          "name": "Gmail account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "deleteFile",
-        "fileId": {
-          "__rl": true,
-          "value": "={{ $('Create Google Doc').item.json.id }}",
-          "mode": "id"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleDrive",
-      "typeVersion": 3,
-      "position": [
-        288,
-        272
-      ],
-      "id": "f632fd15-21e6-4f46-9520-9f713140ee04",
-      "name": "Delete Temp Doc",
-      "credentials": {
-        "googleDriveOAuth2Api": {
-          "id": "jJjU8w4SU7FdfKXV",
-          "name": "Google Drive account"
+        "smtp": {
+          "id": "kSm8W8jkQVcB7hBa",
+          "name": "SMTP account"
         }
       }
     }
@@ -215,7 +122,7 @@
     "Generate Tailored Resume": [
       {
         "json": {
-          "text": "RAVINDER SINGH NEGI\nNew Delhi, India | +91-9756726341 | rvnegi786@gmail.com\nlinkedin.com/in/ravinder-singh-negi | ravindernegi.vercel.app | github.com/Ravinder2001\n\nPROFESSIONAL SUMMARY\nSenior Frontend Developer with 4+ years of hands-on experience specializing in building pixel-perfect, high-performance user interfaces using React.js, Next.js, and TypeScript. Proven ability to develop scalable, reusable component libraries and implement responsive designs that work seamlessly across all devices. Skilled in web performance optimization, conducting frontend code reviews, and collaborating effectively in Agile teams. Delivered significant improvements in development speed and user experience for complex web applications.\n\nTECHNICAL SKILLS\nFrontend Technologies: React.js, Next.js (SSR, SSG, App Router), TypeScript, HTML5, CSS3, Tailwind CSS, JavaScript (ES6+), Responsive UI, Component Architecture, Performance Optimization (Core Web Vitals, lazy loading, code splitting)\nDevelopment Tools: Git, GitHub, Vercel, CI/CD, npm, Agile Development\n\nPROFESSIONAL EXPERIENCE\nSoftware Engineer | Mar 2022 – Present\nIndus Net Technologies (INT.), Kolkata\n-   Architected and delivered 30+ production-ready frontend features using React.js and Next.js for enterprise pharmaceutical platforms, impacting 1000+ internal users.\n-   Developed over 50 reusable UI components, establishing a scalable component library that enhanced frontend development speed by 40% and ensured consistent responsive design across multiple products.\n-   Led frontend implementation of complex dashboards and workflow systems, expertly handling large datasets and business-critical operations, ensuring a high-performance user experience.\n-   Improved code quality and enforced best practices through structured frontend code reviews, refactoring initiatives, and modern architecture patterns across the team.\n-   Collaborated effectively within an Agile team structure, contributing to 2-week sprint cycles for feature delivery.\n-   Promoted from Associate Software Engineer to Software Engineer within 2 years due to consistent high performance and significant technical contributions.\n\nPROJECTS\nHisabkar — Expense Splitter PWA | React.js, TypeScript, PostgreSQL, AWS\n-   Designed and deployed a scalable Progressive Web App (PWA) for personal finance management, featuring real-time transaction handling and cloud deployment.\nCreate Pro App — CLI Tool | Node.js, Open Source\n-   Built and published an open-source Node.js CLI tool to bootstrap modern React projects, focusing on optimized tooling and project structure, contributing to the frontend community.\n\nAWARDS\nWOW Award (2×) — Indus Net Technologies | Feb 2024 & Jun 2024\nRecognised twice for outstanding performance and significant technical contributions to key enterprise projects.\n\nEDUCATION\nSikkim Manipal University | Mar 2024 – Mar 2026\nMaster of Computer Applications (MCA) — Computer Science\n\nMasai School | Apr 2021 – Jan 2022\nFull Stack Web Development Program"
+          "text": "RAVINDER SINGH NEGI\nNew Delhi, India | +91-9756726341 | rvnegi786@gmail.com\nlinkedin.com/in/ravinder-singh-negi | ravindernegi.vercel.app | github.com/Ravinder2001\n\nPROFESSIONAL SUMMARY\nFrontend Developer with **4+ years** of experience building scalable, high-performance web applications using **React.js** and **Next.js**. Specialized in crafting reusable **UI component systems**, optimizing **responsive design**, and delivering intuitive user experiences for enterprise-grade platforms. Proven ability to enhance frontend development speed and system performance. Recipient of **two WOW Awards** for outstanding technical contributions.\n\nTECHNICAL SKILLS\nFrontend: **React.js**, **Next.js**, **JavaScript (ES6+)**, **TypeScript**, **HTML5**, **CSS3**, **Tailwind CSS**, **Responsive UI**, **Component Architecture**, **Performance Optimization**\nTools & Practices: **Git**, **GitHub**, **Vercel**, **CI/CD**, **npm**, **Agile Development**, **API Integration**\n\nPROFESSIONAL EXPERIENCE\nSoftware Engineer | Mar 2022 – Present\n**Indus Net Technologies (INT.)**, Kolkata\n*   Architected and delivered **30+ production-ready frontend features** using **React.js** and **Next.js** for enterprise pharmaceutical platforms, impacting **1000+ internal users**.\n*   Developed **50+ reusable UI components** improving frontend development speed by **40%** and ensuring consistent **responsive design** across multiple products.\n*   Led **frontend implementation** of complex **dashboards** and workflow systems handling large datasets and business-critical operations.\n*   Improved **code quality** through structured code reviews, refactoring initiatives, and modern architecture patterns across the team.\n*   Promoted from Associate Software Engineer to Software Engineer within **2 years** for consistent high performance and technical contributions.\n\nPROJECTS\n**Hisabkar — Expense Splitter PWA** — React.js, TypeScript, AWS | hisabkar.vercel.app\n*   Designed and deployed a scalable **Progressive Web App (PWA)** for personal finance management using **React.js** and **TypeScript**, with real-time transaction handling and cloud deployment on **AWS**.\n\n**Create Pro App — CLI Tool** — Node.js, Open Source | npmjs.com/package/create-pro-app\n*   Built and published an open-source **Node.js CLI** (**Create Pro App**) to bootstrap modern **React projects** with optimized tooling and project structure, enhancing developer productivity.\n\nAWARDS\n**WOW Award (2×)** — Indus Net Technologies | Feb 2024 & Jun 2024\nRecognised twice within the same year for outstanding performance and significant technical contributions to key enterprise projects.\n\nEDUCATION\n**Sikkim Manipal University** | Mar 2024 – Mar 2026\nMaster of Computer Applications (MCA) — Computer Science\n\n**Masai School** | Apr 2021 – Jan 2022\nFull Stack Web Development Program"
         },
         "pairedItem": {
           "item": 0
@@ -261,45 +168,18 @@
       "main": [
         [
           {
-            "node": "Create Google Doc",
+            "node": "Generate PDF",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Create Google Doc": {
-      "main": [
-        [
-          {
-            "node": "Insert Resume Text",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Insert Resume Text": {
-      "main": [
-        [
-          {
-            "node": "Export as PDF",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Export as PDF": {
+    "Generate PDF": {
       "main": [
         [
           {
             "node": "Send Email",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Delete Temp Doc",
             "type": "main",
             "index": 0
           }
@@ -318,23 +198,24 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate"
+    "binaryMode": "separate",
+    "availableInMCP": false
   },
-  "versionId": "c0859eab-8d8c-4a40-b449-74bfd211769e",
+  "versionId": "109f91b0-13c4-41ac-a68b-607fc1dbbf5c",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "ac2779e196403c204e438a8d28553e4f16364a35c88307f93eb5b30f207f3cce"
+    "instanceId": "244f0582025a5a1723ff590318e283e418a8e310550c766405fc03e1203c679a"
   },
-  "id": "lcLFHBMu4rE4Sfle",
+  "id": "AGakYXzX1Bt9thbC",
   "tags": [
     {
-      "updatedAt": "2026-04-01T11:50:29.365Z",
-      "createdAt": "2026-04-01T11:50:29.365Z",
-      "id": "T8ZCnxvjscu4k4nC",
-      "name": "resume-forge"
+      "name": "resume-forge",
+      "id": "8Yi1VIaaOfV81ls4",
+      "updatedAt": "2026-04-02T06:16:24.152Z",
+      "createdAt": "2026-04-02T06:16:24.152Z"
     }
   ]
 }

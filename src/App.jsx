@@ -48,7 +48,7 @@ Master of Computer Applications (MCA) — Computer Science
 Masai School | Apr 2021 – Jan 2022
 Full Stack Web Development Program`
 
-const DEFAULT_WEBHOOK = 'http://localhost:5678/webhook/generate-resume'
+const DEFAULT_WEBHOOK = 'https://new-n8n-latest.duckdns.org/webhook-test/generate-resume'
 const DEFAULT_EMAIL = 'rvnegi786@gmail.com'
 
 export default function App() {
@@ -244,7 +244,7 @@ export default function App() {
                   id="webhook-url"
                   type="url"
                   className="form-input"
-                  placeholder="http://localhost:5678/webhook/generate-resume"
+                  placeholder="http://localhost:5678/webhook-test/generate-resume"
                   value={webhookUrl}
                   onChange={(e) => setWebhookUrl(e.target.value)}
                 />
