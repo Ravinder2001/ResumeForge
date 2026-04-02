@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import './index.css'
 
-const WEBHOOK_URL = 'https://new-n8n-latest.duckdns.org/webhook-test/generate-resume'
+const WEBHOOK_URL = 'https://new-n8n-latest.duckdns.org/webhook/generate-resume'
 
 function parseGeminiError(message) {
   const msg = (message || '').toLowerCase()
