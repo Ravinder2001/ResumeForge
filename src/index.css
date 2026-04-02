@@ -337,11 +337,85 @@ body {
   letter-spacing: 0.1em;
 }
 
-/* ── Webhook URL row ── */
-.webhook-grid {
+/* ── Two-column grid for Company + Email ── */
+.two-col-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  margin-bottom: 28px;
+}
+
+/* ── API Info Note ── */
+.api-info-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: rgba(124, 58, 237, 0.06);
+  border: 1px solid rgba(124, 58, 237, 0.15);
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.api-info-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.api-endpoint {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--accent-light);
+  background: rgba(124, 58, 237, 0.12);
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid rgba(124, 58, 237, 0.2);
+}
+
+/* ── Error Detail (collapsible) ── */
+.error-detail {
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.error-detail summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.error-detail summary::before {
+  content: '▶';
+  display: inline-block;
+  transition: transform 0.2s;
+  font-size: 9px;
+}
+
+.error-detail[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.error-detail code {
+  display: block;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-sm);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #f87171;
+  word-break: break-all;
+  white-space: pre-wrap;
+  line-height: 1.6;
 }
 
 /* ── Submit Button ── */
@@ -584,7 +658,7 @@ body {
   .header { padding: 16px 20px; }
   .main-content { padding: 40px 20px; }
   .info-row { grid-template-columns: 1fr; gap: 10px; }
-  .webhook-grid { grid-template-columns: 1fr; }
+  .two-col-grid { grid-template-columns: 1fr; }
   .card { padding: 24px 20px; }
   .hero h1 { font-size: 28px; }
 }

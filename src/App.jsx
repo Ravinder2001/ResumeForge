@@ -48,16 +48,33 @@ Master of Computer Applications (MCA) — Computer Science
 Masai School | Apr 2021 – Jan 2022
 Full Stack Web Development Program`
 
-const DEFAULT_WEBHOOK = 'https://new-n8n-latest.duckdns.org/webhook-test/generate-resume'
+const WEBHOOK_URL = 'https://new-n8n-latest.duckdns.org/webhook/generate-resume'
 const DEFAULT_EMAIL = 'rvnegi786@gmail.com'
+
+function parseGeminiError(message) {
+  const msg = (message || '').toLowerCase()
+  if (msg.includes('429') || msg.includes('quota') || msg.includes('rate limit') || msg.includes('resource_exhausted')) {
+    return '🚦 Gemini API rate limit reached. You\'ve hit the free tier quota (1,500 req/day). Please wait a few minutes or try again tomorrow.'
+  }
+  if (msg.includes('403') || msg.includes('api_key') || msg.includes('permission')) {
+    return '🔑 Gemini API key error. The API key in n8n may be invalid or expired. Please check your n8n credentials.'
+  }
+  if (msg.includes('500') || msg.includes('internal')) {
+    return '⚙️ Gemini returned an internal server error. This is temporary — please try again in a moment.'
+  }
+  if (msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('network')) {
+    return '🌐 Could not reach the n8n server. Make sure your n8n instance is running and accessible.'
+  }
+  return null
+}
 
 export default function App() {
   const [jobDescription, setJobDescription] = useState('')
   const [recipientEmail, setRecipientEmail] = useState(DEFAULT_EMAIL)
-  const [webhookUrl, setWebhookUrl] = useState(DEFAULT_WEBHOOK)
-  const [geminiApiKey, setGeminiApiKey] = useState('')
+  const [companyName, setCompanyName] = useState('')
   const [status, setStatus] = useState(null) // null | 'loading' | 'success' | 'error'
   const [statusMessage, setStatusMessage] = useState('')
+  const [errorDetail, setErrorDetail] = useState('')
   const [charCount, setCharCount] = useState(0)
 
   const handleJDChange = (e) => {
@@ -71,53 +88,60 @@ export default function App() {
     if (!jobDescription.trim()) {
       setStatus('error')
       setStatusMessage('Please paste the job description before generating your resume.')
+      setErrorDetail('')
       return
     }
     if (!recipientEmail.trim()) {
       setStatus('error')
       setStatusMessage('Please provide a recipient email address.')
+      setErrorDetail('')
       return
     }
-    if (!webhookUrl.trim()) {
+    if (!companyName.trim()) {
       setStatus('error')
-      setStatusMessage('Please enter your n8n webhook URL.')
+      setStatusMessage('Please enter the company name you are applying to.')
+      setErrorDetail('')
       return
     }
 
     setStatus('loading')
-    setStatusMessage('Sending to n8n… Gemini is crafting your tailored resume. This may take 15-30 seconds.')
+    setStatusMessage('Sending to n8n… Gemini is crafting your tailored resume. This may take 15–30 seconds.')
+    setErrorDetail('')
 
     try {
-      const response = await fetch(webhookUrl, {
+      const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           jobDescription: jobDescription.trim(),
           baseResume: BASE_RESUME,
           recipientEmail: recipientEmail.trim(),
-          geminiApiKey: geminiApiKey.trim() || undefined,
+          companyName: companyName.trim(),
         }),
       })
 
       if (!response.ok) {
         const errText = await response.text()
-        throw new Error(errText || `Server responded with status ${response.status}`)
+        throw new Error(errText || `HTTP ${response.status}`)
       }
 
       setStatus('success')
       setStatusMessage(
         `Your tailored resume has been generated and sent to ${recipientEmail}. Check your inbox (and spam folder) in a moment!`
       )
+      setErrorDetail('')
       setJobDescription('')
+      setCompanyName('')
       setCharCount(0)
     } catch (err) {
       setStatus('error')
-      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        setStatusMessage(
-          'Could not reach the n8n webhook. Make sure your n8n instance is running and the webhook URL is correct.'
-        )
+      const friendly = parseGeminiError(err.message)
+      if (friendly) {
+        setStatusMessage(friendly)
+        setErrorDetail('')
       } else {
-        setStatusMessage(`Something went wrong: ${err.message}`)
+        setStatusMessage('Something went wrong while generating your resume.')
+        setErrorDetail(err.message)
       }
     }
   }
@@ -214,55 +238,46 @@ export default function App() {
               </div>
             </div>
 
-            {/* Email */}
-            <div className="form-section">
-              <label htmlFor="recipient-email" className="form-label">
-                <span className="form-label-icon">📨</span>
-                Send Resume To
-              </label>
-              <input
-                id="recipient-email"
-                type="email"
-                className="form-input"
-                placeholder="rvnegi786@gmail.com"
-                value={recipientEmail}
-                onChange={(e) => setRecipientEmail(e.target.value)}
-              />
+            {/* Company + Email row */}
+            <div className="two-col-grid">
+              <div>
+                <label htmlFor="company-name" className="form-label">
+                  <span className="form-label-icon">🏢</span>
+                  Company Name
+                </label>
+                <input
+                  id="company-name"
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Google, Atlassian, Razorpay…"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="recipient-email" className="form-label">
+                  <span className="form-label-icon">📨</span>
+                  Send Resume To
+                </label>
+                <input
+                  id="recipient-email"
+                  type="email"
+                  className="form-input"
+                  placeholder="rvnegi786@gmail.com"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                />
+              </div>
             </div>
 
-            {/* Settings divider */}
-            <div className="divider"></div>
-
-            {/* Webhook & API key */}
-            <div className="webhook-grid">
-              <div>
-                <label htmlFor="webhook-url" className="form-label">
-                  <span className="form-label-icon">🔗</span>
-                  n8n Webhook URL
-                </label>
-                <input
-                  id="webhook-url"
-                  type="url"
-                  className="form-input"
-                  placeholder="http://localhost:5678/webhook-test/generate-resume"
-                  value={webhookUrl}
-                  onChange={(e) => setWebhookUrl(e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="gemini-key" className="form-label">
-                  <span className="form-label-icon">🔑</span>
-                  Gemini API Key <span style={{color:'var(--text-muted)', fontWeight:400, textTransform:'none', letterSpacing:0}}>(optional — uses n8n cred)</span>
-                </label>
-                <input
-                  id="gemini-key"
-                  type="password"
-                  className="form-input"
-                  placeholder="AIza… (leave blank if set in n8n)"
-                  value={geminiApiKey}
-                  onChange={(e) => setGeminiApiKey(e.target.value)}
-                />
-              </div>
+            {/* API info note */}
+            <div className="api-info-note">
+              <span className="api-info-icon">🔗</span>
+              <span>
+                Requests are sent to{' '}
+                <code className="api-endpoint">POST /webhook/generate-resume</code>
+                {' '}· Powered by Google Gemini 2.0 Flash via n8n
+              </span>
             </div>
 
             {/* Submit */}
@@ -292,11 +307,17 @@ export default function App() {
               <span className="status-icon">
                 {status === 'success' ? '✅' : status === 'error' ? '❌' : '⏳'}
               </span>
-              <div>
+              <div style={{flex:1}}>
                 <div className="status-title">
-                  {status === 'success' ? 'Resume sent!' : status === 'error' ? 'Something went wrong' : 'Processing…'}
+                  {status === 'success' ? 'Resume sent!' : status === 'error' ? 'Error' : 'Processing…'}
                 </div>
                 <div className="status-message">{statusMessage}</div>
+                {errorDetail && (
+                  <details className="error-detail">
+                    <summary>Technical details</summary>
+                    <code>{errorDetail}</code>
+                  </details>
+                )}
               </div>
             </div>
           )}
